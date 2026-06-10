@@ -1,4 +1,5 @@
 """主流程编排模块。"""
+import shutil
 from typing import Optional, List, Dict, Any
 import numpy as np
 
@@ -34,18 +35,15 @@ class NoteSearchPipeline:
     
     def build_index(self, excel_path: str):
         """加载 → 分块 → 向量化 → 存储。"""
-        # 删除旧 collection（如果存在），避免数据膨胀
+        # 直接删除整个 ChromaDB 目录，避免 delete_collection 的状态问题
         try:
-            self.store.client.delete_collection(self.config.collection_name)
-            print(f"Deleted old collection: {self.config.collection_name}")
-        except Exception:
-            pass  # collection 不存在时忽略
+            shutil.rmtree(self.config.persist_dir)
+            print(f"Cleared old index: {self.config.persist_dir}")
+        except FileNotFoundError:
+            pass  # 目录不存在时忽略
         
-        # 重新创建空的 collection
-        self.store.collection = self.store.client.get_or_create_collection(
-            name=self.config.collection_name,
-            metadata={"hnsw:space": "cosine"},
-        )
+        # 重新初始化 VectorStore（创建全新的 client + collection）
+        self.store = VectorStore(self.config.persist_dir, self.config.collection_name)
         
         print(f"Loading data from {excel_path}...")
         df = self.data_loader.load_notes(excel_path)
