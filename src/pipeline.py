@@ -33,7 +33,20 @@ class NoteSearchPipeline:
         )
     
     def build_index(self, excel_path: str):
-        """首次运行：加载 → 分块 → 向量化 → 存储。"""
+        """加载 → 分块 → 向量化 → 存储。"""
+        # 删除旧 collection（如果存在），避免数据膨胀
+        try:
+            self.store.client.delete_collection(self.config.collection_name)
+            print(f"Deleted old collection: {self.config.collection_name}")
+        except Exception:
+            pass  # collection 不存在时忽略
+        
+        # 重新创建空的 collection
+        self.store.collection = self.store.client.get_or_create_collection(
+            name=self.config.collection_name,
+            metadata={"hnsw:space": "cosine"},
+        )
+        
         print(f"Loading data from {excel_path}...")
         df = self.data_loader.load_notes(excel_path)
         print(f"Loaded {len(df)} notes.")
