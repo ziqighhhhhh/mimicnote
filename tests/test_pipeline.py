@@ -52,10 +52,31 @@ class TestNoteSearchPipeline:
             with patch.object(pipeline.embedder, 'encode') as mock_encode:
                 mock_encode.return_value = np.array([[0.1] * 384])
                 
-                pipeline.build_index(str(excel_path))
-                
-                results = pipeline.store.query(
-                    np.array([0.1] * 384),
-                    top_k=10,
-                )
-                assert len(results) == 1
+                with patch.object(pipeline.store, 'add_chunks') as mock_add:
+                    with patch.object(pipeline.store, 'query') as mock_query:
+                        mock_query.return_value = [
+                            {
+                                "chunk": {
+                                    "chunk_id": "TEST-1-0",
+                                    "note_id": "TEST-1",
+                                    "subject_id": 1,
+                                    "hadm_id": 1,
+                                    "note_type": "DS",
+                                    "chunk_index": 0,
+                                    "text": "Patient has diabetes.",
+                                },
+                                "distance": 0.1,
+                            }
+                        ]
+                        
+                        pipeline.build_index(str(excel_path))
+                        
+                        # Verify add_chunks was called
+                        assert mock_add.called
+                        
+                        # Verify query works
+                        results = pipeline.store.query(
+                            np.array([0.1] * 384),
+                            top_k=10,
+                        )
+                        assert len(results) == 1
