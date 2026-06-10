@@ -35,7 +35,10 @@ class NoteSearchPipeline:
     
     def build_index(self, excel_path: str):
         """加载 → 分块 → 向量化 → 存储。"""
-        # 直接删除整个 ChromaDB 目录，避免 delete_collection 的状态问题
+        # 先释放 ChromaDB 客户端（避免 Windows 文件占用导致删除失败）
+        self.store = None
+        
+        # 直接删除整个 ChromaDB 目录
         try:
             shutil.rmtree(self.config.persist_dir)
             print(f"Cleared old index: {self.config.persist_dir}")
