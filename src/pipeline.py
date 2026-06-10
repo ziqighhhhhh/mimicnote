@@ -71,7 +71,17 @@ class NoteSearchPipeline:
         
         print("Storing in vector database...")
         self.store.add_chunks(all_chunks, embeddings)
-        print("Index built successfully!")
+        
+        # 验证存储数量
+        actual_count = self.store.collection.count()
+        expected_count = len(all_chunks)
+        print(f"Index built: {actual_count} / {expected_count} chunks stored.")
+        
+        if actual_count != expected_count:
+            print(f"WARNING: Mismatch! Expected {expected_count}, got {actual_count}")
+            print("Please re-run: python main.py --build-index --excel \"data/无标题.xlsx\"")
+        else:
+            print("Index built successfully!")
     
     def search(
         self,
