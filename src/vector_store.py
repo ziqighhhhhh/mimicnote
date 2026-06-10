@@ -16,26 +16,36 @@ class VectorStore:
             metadata={"hnsw:space": "cosine"},
         )
     
-    def add_chunks(self, chunks: List[Dict[str, Any]], embeddings: np.ndarray):
-        ids = [c["chunk_id"] for c in chunks]
-        documents = [c["text"] for c in chunks]
-        metadatas = [
-            {
-                "note_id": c["note_id"],
-                "subject_id": c["subject_id"],
-                "hadm_id": c["hadm_id"],
-                "note_type": c["note_type"],
-                "chunk_index": c["chunk_index"],
-            }
-            for c in chunks
-        ]
+    def add_chunks(self, chunks: List[Dict[str, Any]], embeddings: np.ndarray, batch_size: int = 5000):
+        """分批添加 chunks，避免超过 ChromaDB 的批次限制（5461）。"""
         embeddings_list = embeddings.tolist()
-        self.collection.add(
-            ids=ids,
-            embeddings=embeddings_list,
-            documents=documents,
-            metadatas=metadatas,
-        )
+        total = len(chunks)
+        
+        for start in range(0, total, batch_size):
+            end = min(start + batch_size, total)
+            batch_chunks = chunks[start:end]
+            batch_embeddings = embeddings_list[start:end]
+            
+            ids = [c["chunk_id"] for c in batch_chunks]
+            documents = [c["text"] for c in batch_chunks]
+            metadatas = [
+                {
+                    "note_id": c["note_id"],
+                    "subject_id": c["subject_id"],
+                    "hadm_id": c["hadm_id"],
+                    "note_type": c["note_type"],
+                    "chunk_index": c["chunk_index"],
+                }
+                for c in batch_chunks
+            ]
+            
+            self.collection.add(
+                ids=ids,
+                embeddings=batch_embeddings,
+                documents=documents,
+                metadatas=metadatas,
+            )
+            print(f"  Stored batch {start}-{end} / {total}")
     
     def query(
         self,
