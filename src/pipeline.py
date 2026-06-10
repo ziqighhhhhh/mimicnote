@@ -35,15 +35,22 @@ class NoteSearchPipeline:
     
     def build_index(self, excel_path: str):
         """加载 → 分块 → 向量化 → 存储。"""
-        # 先释放 ChromaDB 客户端（避免 Windows 文件占用导致删除失败）
+        # 释放旧的 ChromaDB client 连接，避免文件被占用
         self.store = None
         
-        # 直接删除整个 ChromaDB 目录
-        try:
-            shutil.rmtree(self.config.persist_dir)
-            print(f"Cleared old index: {self.config.persist_dir}")
-        except FileNotFoundError:
-            pass  # 目录不存在时忽略
+        # 尝试删除旧目录；如果被占用则重命名
+        import os
+        import time
+        persist = self.config.persist_dir
+        if os.path.exists(persist):
+            try:
+                shutil.rmtree(persist)
+                print(f"Cleared old index: {persist}")
+            except PermissionError:
+                # 文件被占用：重命名为备份，而非删除
+                backup = f"{persist}_old_{int(time.time())}"
+                os.rename(persist, backup)
+                print(f"Old index locked, renamed to: {backup}")
         
         # 重新初始化 VectorStore（创建全新的 client + collection）
         self.store = VectorStore(self.config.persist_dir, self.config.collection_name)
