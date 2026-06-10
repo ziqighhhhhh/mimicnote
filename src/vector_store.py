@@ -16,8 +16,12 @@ class VectorStore:
             metadata={"hnsw:space": "cosine"},
         )
     
-    def add_chunks(self, chunks: List[Dict[str, Any]], embeddings: np.ndarray, batch_size: int = 5000):
-        """分批添加 chunks，避免超过 ChromaDB 的批次限制（5461）。"""
+    def add_chunks(self, chunks: List[Dict[str, Any]], embeddings: np.ndarray, batch_size: int = 2000):
+        """分批添加 chunks，避免超过 ChromaDB 的批次限制（5461）。
+        
+        batch_size 设为 2000（而非 5000），避免 Windows 上 Rust 后端
+        在大批量写入时的稳定性问题。
+        """
         embeddings_list = embeddings.tolist()
         total = len(chunks)
         
@@ -39,13 +43,17 @@ class VectorStore:
                 for c in batch_chunks
             ]
             
-            self.collection.add(
-                ids=ids,
-                embeddings=batch_embeddings,
-                documents=documents,
-                metadatas=metadatas,
-            )
-            print(f"  Stored batch {start}-{end} / {total}")
+            try:
+                self.collection.add(
+                    ids=ids,
+                    embeddings=batch_embeddings,
+                    documents=documents,
+                    metadatas=metadatas,
+                )
+                print(f"  Stored batch {start}-{end} / {total}")
+            except Exception as e:
+                print(f"  ERROR storing batch {start}-{end}: {e}")
+                raise
     
     def query(
         self,
