@@ -1,5 +1,4 @@
 """主流程编排模块。"""
-import shutil
 from typing import Optional, List, Dict, Any
 import numpy as np
 
@@ -35,24 +34,7 @@ class NoteSearchPipeline:
     
     def build_index(self, excel_path: str):
         """加载 → 分块 → 向量化 → 存储。"""
-        # 释放旧的 ChromaDB client 连接，避免文件被占用
-        self.store = None
-        
-        # 尝试删除旧目录；如果被占用则重命名
-        import os
-        import time
-        persist = self.config.persist_dir
-        if os.path.exists(persist):
-            try:
-                shutil.rmtree(persist)
-                print(f"Cleared old index: {persist}")
-            except PermissionError:
-                # 文件被占用：重命名为备份，而非删除
-                backup = f"{persist}_old_{int(time.time())}"
-                os.rename(persist, backup)
-                print(f"Old index locked, renamed to: {backup}")
-        
-        # 重新初始化 VectorStore（创建全新的 client + collection）
+        # 内存模式：直接重新初始化 VectorStore（旧数据自动释放）
         self.store = VectorStore(self.config.persist_dir, self.config.collection_name)
         
         print(f"Loading data from {excel_path}...")

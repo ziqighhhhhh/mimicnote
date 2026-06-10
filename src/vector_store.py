@@ -8,9 +8,13 @@ class VectorStore:
     """ChromaDB 向量存储封装。"""
     
     def __init__(self, persist_dir: str = "./chroma_db", collection_name: str = "mimic_notes"):
-        self.persist_dir = persist_dir
+        """使用内存模式 ChromaDB，完全绕过 Windows 文件锁定问题。
+        
+        persist_dir 参数保留以保持 API 兼容，但实际不使用。
+        """
         self.collection_name = collection_name
-        self.client = chromadb.PersistentClient(path=persist_dir)
+        # 内存模式：数据存储在内存中，不涉及文件系统
+        self.client = chromadb.Client()
         self.collection = self.client.get_or_create_collection(
             name=collection_name,
             metadata={"hnsw:space": "cosine"},
