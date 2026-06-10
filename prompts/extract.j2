@@ -1,0 +1,20 @@
+Extract the following fields from each fragment: {{ fields|join(", ") }}
+
+CRITICAL: If a field is not mentioned in the fragment, return null (not empty string or "not found").
+
+Fragments:
+{% for chunk in chunks %}
+--- Fragment {{ loop.index }} ---
+ID: {{ chunk.chunk_id }}
+Text: {{ chunk.text }}
+{% endfor %}
+
+Return a JSON array:
+[
+  {
+    "chunk_id": "...",
+    "extractions": {"field1": "value1", "field2": null},
+    "confidence": "high"
+  },
+  ...
+]

@@ -1,0 +1,16 @@
+Criteria: {{ criteria }}
+
+Determine if each fragment meets the criteria. Answer true/false with reasoning.
+
+Fragments:
+{% for chunk in chunks %}
+--- Fragment {{ loop.index }} ---
+ID: {{ chunk.chunk_id }}
+Text: {{ chunk.text }}
+{% endfor %}
+
+Return a JSON array:
+[
+  {"chunk_id": "...", "is_match": true, "reasoning": "..."},
+  ...
+]
