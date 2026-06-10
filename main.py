@@ -2,8 +2,12 @@
 import os
 import argparse
 import json
+from dotenv import load_dotenv
 from src.config import PipelineConfig
 from src.pipeline import NoteSearchPipeline
+
+# 加载 .env 文件（如果存在）
+load_dotenv()
 
 
 def main():
